@@ -23,7 +23,9 @@ import android.os.Looper;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -39,6 +41,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import io.appwrite.Client;
 import io.appwrite.coroutines.CoroutineCallback;
@@ -60,9 +63,11 @@ public class NewPostFragment extends Fragment {
     Uri mediaUri;
     String mediaTipo;
 
+    public NewPostFragment() {}
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_new_post, container, false);
     }
 
     @Override
@@ -151,20 +156,21 @@ public class NewPostFragment extends Fragment {
         data.put("author", user.getName().toString());
         data.put("authorPhotoUrl", null);
         data.put("content", content);
-        data.put("mediaType", mediaTipo);
+        data.put("mediatype", mediaTipo);
         data.put("mediaUrl", mediaUrl);
 
         try{
             databases.createDocument(
                     getString(R.string.APPWRITE_DATABASE_ID),
                     getString(R.string.APPWRITE_POSTS_COLLECTION_ID),
-                    "unique();",
+                    "unique()",
                     data,
                     new ArrayList<>(),
                     new CoroutineCallback<>((result, error) -> {
                         if (error != null){
                             Snackbar.make(requireView(), "Error: " +
                                     error.toString(), Snackbar.LENGTH_LONG).show();
+                            System.err.println(error.toString() + "1232132132132132123");
                         }else {
                             System.out.println("Post creado: " +
                                     mainHandler.post(() -> {

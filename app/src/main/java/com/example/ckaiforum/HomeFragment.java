@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import io.appwrite.Client;
 import io.appwrite.coroutines.CoroutineCallback;
@@ -38,7 +39,6 @@ public class HomeFragment extends Fragment {
     NavController navController;
     ImageView photoImageView;
     TextView displayNameTextView, emailTextView;
-
     Client client;
     Account account;
     PostAdapter adapter;
@@ -58,6 +58,11 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle
             savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        RecyclerView postsRecyclerView = view.findViewById(R.id.postsRecyclerView);
+        adapter = new PostAdapter();
+
+        postsRecyclerView.setAdapter(adapter);
 
         navController = Navigation.findNavController(view);
 
@@ -101,13 +106,9 @@ public class HomeFragment extends Fragment {
         view.findViewById(R.id.gotoNewPostFragmentButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                navController.navigate(R.id.newPostFragment1);
+                navController.navigate(R.id.NewPostFragment);
             }
         });
-
-        RecyclerView postsRecyclerView = view.findViewById(R.id.postsRecyclerView);
-        adapter = new PostAdapter();
-        postsRecyclerView.setAdapter(adapter);
 
         try{
             account.get(new CoroutineCallback<>((result,error) -> {
@@ -163,8 +164,10 @@ public class HomeFragment extends Fragment {
     {
         ImageView authorPhotoImageView, likeImageView, mediaImageView;
         TextView authorTextView, contentTextView, numLikesTextView;
+
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
+
             authorPhotoImageView = itemView.findViewById(R.id.photoImageView);
             likeImageView = itemView.findViewById(R.id.likeImageView);
             mediaImageView = itemView.findViewById(R.id.mediaImage);
@@ -184,16 +187,30 @@ public class HomeFragment extends Fragment {
                     PostViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.viewholder_post, parent, false));
         }
 
+
+
         @Override
         public void onBindViewHolder(@NonNull PostViewHolder holder, int position)
         {
             Map<String,Object> post =
                     lista.getDocuments().get(position).getData();
 
+            if (post.get("authorPhotoUrl") == null)
+            {
+//                holder.authorPhotoImageView.setImageResource(R.drawable.user);
+            }
+            else
+            {
+                Glide.with(getContext()).load(post.get("authorPhotoUrl").toString()).circleCrop()
+                        .into(holder.authorPhotoImageView);
+            }
+            holder.authorTextView.setText(post.get("author").toString());
+            holder.contentTextView.setText(post.get("content").toString());
+
             // Miniatura de media
             if (post.get("mediaUrl") != null) {
                 holder.mediaImageView.setVisibility(View.VISIBLE);
-                if ("audio".equals(post.get("mediaType").toString())) {
+                if ("audio".equals(post.get("mediatype").toString())) {
                     Glide.with(requireView()).load(R.drawable.audio).centerCrop().into(holder.mediaImageView);
                 } else {
                     Glide.with(requireView()).load(post.get("mediaUrl").toString()).centerCrop().into
@@ -206,18 +223,6 @@ public class HomeFragment extends Fragment {
             } else {
                 holder.mediaImageView.setVisibility(View.GONE);
             }
-
-            if (post.get("authorPhotoUrl") == null)
-            {
-                holder.authorPhotoImageView.setImageResource(R.drawable.user);
-            }
-            else
-            {
-                Glide.with(getContext()).load(post.get("authorPhotoUrl").toString()).circleCrop()
-                        .into(holder.authorPhotoImageView);
-            }
-            holder.authorTextView.setText(post.get("author").toString());
-            holder.contentTextView.setText(post.get("content").toString());
 
             // Gestion de likes
 
