@@ -168,7 +168,7 @@ public class HomeFragment extends Fragment {
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            authorPhotoImageView = itemView.findViewById(R.id.photoImageView);
+            authorPhotoImageView = itemView.findViewById(R.id.authorPhotoImageView);
             likeImageView = itemView.findViewById(R.id.likeImageView);
             mediaImageView = itemView.findViewById(R.id.mediaImage);
             authorTextView = itemView.findViewById(R.id.authorTextView);
@@ -194,19 +194,6 @@ public class HomeFragment extends Fragment {
         {
             Map<String,Object> post =
                     lista.getDocuments().get(position).getData();
-
-            if (post.get("authorPhotoUrl") == null)
-            {
-//                holder.authorPhotoImageView.setImageResource(R.drawable.user);
-            }
-            else
-            {
-                Glide.with(getContext()).load(post.get("authorPhotoUrl").toString()).circleCrop()
-                        .into(holder.authorPhotoImageView);
-            }
-            holder.authorTextView.setText(post.get("author").toString());
-            holder.contentTextView.setText(post.get("content").toString());
-
             // Miniatura de media
             if (post.get("mediaUrl") != null) {
                 holder.mediaImageView.setVisibility(View.VISIBLE);
@@ -223,6 +210,18 @@ public class HomeFragment extends Fragment {
             } else {
                 holder.mediaImageView.setVisibility(View.GONE);
             }
+
+            if (post.get("authorPhotoUrl") == null)
+            {
+                holder.authorPhotoImageView.setImageResource(R.drawable.user);
+            }
+            else
+            {
+                Glide.with(getContext()).load(post.get("authorPhotoUrl").toString()).circleCrop()
+                        .into(holder.authorPhotoImageView);
+            }
+            holder.authorTextView.setText(post.get("author").toString());
+            holder.contentTextView.setText(post.get("content").toString());
 
             // Gestion de likes
 
