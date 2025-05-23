@@ -1,11 +1,14 @@
 package com.example.ckaiforum.Adapter;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.LifecycleOwner;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -132,12 +135,17 @@ public class PostAdapter extends RecyclerView.Adapter<PostViewHolder>{
                         if (error != null) {
                             throw new RuntimeException(error);
                         }
-                        holder.numLikesTextView.setText(String.valueOf(newLikes.size()));
                         // 刷新列表
                         if (list != null) {
-                            list.getDocuments().get(holder.getAdapterPosition()).getData()
-                                    .put("likes", newLikes);
-                            notifyItemChanged(holder.getAdapterPosition());
+
+                            Handler handler = new Handler(Looper.getMainLooper());
+                            handler.post(() ->
+                            {
+                                holder.numLikesTextView.setText(String.valueOf(newLikes.size()));
+                                list.getDocuments().get(holder.getAdapterPosition()).getData()
+                                        .put("likes", newLikes);
+                                notifyItemChanged(holder.getAdapterPosition());
+                            });
                         }
                     })
             );
@@ -155,6 +163,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostViewHolder>{
     public int getItemCount() {
         return list == null ? 0 : list.getDocuments().size();
     }
+
     public void setList(DocumentList<Map<String, Object>> posts) {
         this.list = posts;
         notifyDataSetChanged();

@@ -10,7 +10,7 @@ import com.example.ckaiforum.R;
 
 public class NotificationViewHolder extends RecyclerView.ViewHolder{
 
-    TextView titleView, contentView;
+    public TextView titleView, contentView;
 
     public NotificationViewHolder(@NonNull View itemView) {
         super(itemView);

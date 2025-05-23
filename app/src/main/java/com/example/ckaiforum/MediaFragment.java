@@ -42,7 +42,7 @@ public class MediaFragment extends Fragment
         videoView = view.findViewById(R.id.videoView);
         appViewModel.postDeselection.observe(getViewLifecycleOwner(), post
                 -> {
-            String mediaType = Objects.requireNonNull(post.get("mediaType")).toString();
+            String mediaType = Objects.requireNonNull(post.get("mediatype")).toString();
             String mediaUrl = Objects.requireNonNull(post.get("mediaUrl")).toString();
             if ("video".equals(mediaType) ||
                     "audio".equals(mediaType)) {

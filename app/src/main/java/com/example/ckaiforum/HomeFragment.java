@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
@@ -16,6 +17,7 @@ import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.example.ckaiforum.Adapter.NotificationAdapter;
 import com.example.ckaiforum.Adapter.PostAdapter;
 import com.example.ckaiforum.ViewModel.AppViewModel;
 import com.google.android.material.navigation.NavigationView;
@@ -36,8 +38,9 @@ public class HomeFragment extends Fragment {
     private TextView displayNameTextView, emailTextView;
     private Client client;
     private Account account;
-    private PostAdapter adapter;
+    private PostAdapter postAdapter;
     private String userId;
+
 
     @Override
     public View onCreateView(
@@ -52,9 +55,8 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-
-        initViews(view);
         initClient();
+        initViews(view);
         setupNavigationHeader(view);
 
         fetchPosts();
@@ -63,14 +65,14 @@ public class HomeFragment extends Fragment {
     private void initViews(View view) {
         RecyclerView postsRecyclerView = view.findViewById(R.id.postsRecyclerView);
         postsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new PostAdapter(
+        postAdapter = new PostAdapter(
                 requireContext(),
                 new ViewModelProvider(requireActivity()).get(AppViewModel.class),
                 Navigation.findNavController(view),
                 getUserIdSafely(),
                 client
         );
-        postsRecyclerView.setAdapter(adapter);
+        postsRecyclerView.setAdapter(postAdapter);
         navController = Navigation.findNavController(view);
     }
 
@@ -93,11 +95,12 @@ public class HomeFragment extends Fragment {
         displayNameTextView = header.findViewById(R.id.displayNameTextView);
         emailTextView = header.findViewById(R.id.emailTextView);
         ImageView notificationImageView = header.findViewById(R.id.notificationBell);
+        DrawerLayout drawer = requireActivity().findViewById(R.id.main);
 
-        view.findViewById(R.id.gotoNewPostFragmentButton).setOnClickListener(v ->
-                navController.navigate(R.id.NewPostFragment));
-
-        notificationImageView.setOnClickListener(v -> navController.navigate(R.id.notificationsFragment));
+        notificationImageView.setOnClickListener(v -> {
+            drawer.closeDrawers();
+            navController.navigate(R.id.notificationsFragment);
+        });
     }
 
     private void fetchPosts() {
@@ -127,9 +130,10 @@ public class HomeFragment extends Fragment {
                                         return;
                                     }
 
+                                    requireActivity().runOnUiThread(() ->{
+                                        postAdapter.setList(result1);
 
-                                    requireActivity().runOnUiThread(() ->
-                                            adapter.setList(result1)
+                                        }
                                     );
                                 })
                         );
