@@ -31,6 +31,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
+import com.example.ckaiforum.ViewModel.AppViewModel;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.io.File;
@@ -41,7 +42,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+
 
 import io.appwrite.Client;
 import io.appwrite.coroutines.CoroutineCallback;
@@ -61,7 +62,7 @@ public class NewPostFragment extends Fragment {
     Account account;
     AppViewModel appViewModel;
     Uri mediaUri;
-    String mediaTipo;
+    String mediaType;
 
     public NewPostFragment() {}
     @Override
@@ -80,12 +81,7 @@ public class NewPostFragment extends Fragment {
         publishButton = view.findViewById(R.id.publishButton);
         postContentEditText = view.findViewById(R.id.postContentEditText);
 
-        publishButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                publicar();
-            }
-        });
+        publishButton.setOnClickListener(v -> publican());
 
         appViewModel = new ViewModelProvider(requireActivity()).get(AppViewModel.class);
 
@@ -94,24 +90,24 @@ public class NewPostFragment extends Fragment {
         view.findViewById(R.id.camara_video).setOnClickListener(v ->
                 tomarVideo());
         view.findViewById(R.id.grabar_audio).setOnClickListener(v ->
-                grabarAudio());
+                recordAudio());
         view.findViewById(R.id.imagen_galeria).setOnClickListener(v ->
-                seleccionarImagen());
+                selectionImage());
         view.findViewById(R.id.video_galeria).setOnClickListener(v ->
-                seleccionarVideo());
+                selectionVideo());
         view.findViewById(R.id.audio_galeria).setOnClickListener(v ->
-                seleccionarAudio());
-        appViewModel.mediaSeleccionado.observe(getViewLifecycleOwner(), media
+                selectionAudio());
+        appViewModel.mediaDeselection.observe(getViewLifecycleOwner(), media
                 ->
         {
             this.mediaUri = media.uri;
-            this.mediaTipo = media.tipo;
+            this.mediaType = media.type;
             Glide.with(this).load(media.uri).into((ImageView)
                     view.findViewById(R.id.previsualizacion));
         });
     }
 
-    private void publicar() {
+    private void publican() {
         String postContent = postContentEditText.getText().toString();
 
         if (TextUtils.isEmpty(postContent)){
@@ -121,21 +117,19 @@ public class NewPostFragment extends Fragment {
 
         publishButton.setEnabled(false);
 
-        //Obtenemos información de la cuenta del autor
 
         account = new Account(client);
 
         try {
             account.get(new CoroutineCallback<>((result, error) -> {
                 if (error != null) {
-                    error.printStackTrace();
-                    return;
+                    throw new RuntimeException(error);
                 }
 
-                if (mediaTipo == null){
-                    guardarEnAppWrite(result, postContent, null);
+                if (mediaType == null && result != null){
+                    saveEnAppWrite(result, postContent, null);
                 }else {
-                    pujaIguardarEnAppWrite(result,postContent);
+                    uploadAndSaveInAppWrite(result,postContent);
                 }
             }));
         }catch (AppwriteException e){
@@ -143,20 +137,18 @@ public class NewPostFragment extends Fragment {
         }
     }
 
-    void guardarEnAppWrite(User<Map<String, Object>> user, String content, String mediaUrl){
+    void saveEnAppWrite(User<Map<String, Object>> user, String content, String mediaUrl){
 
         Handler mainHandler = new Handler(Looper.getMainLooper());
 
-        // Crear instancia del servicio Databases
         Databases databases = new Databases(client);
 
-        // Datos del documento
         Map<String, Object> data = new HashMap<>();
-        data.put("uid", user.getId().toString());
-        data.put("author", user.getName().toString());
+        data.put("uid", user.getId());
+        data.put("author", user.getName());
         data.put("authorPhotoUrl", null);
         data.put("content", content);
-        data.put("mediatype", mediaTipo);
+        data.put("mediatype", mediaType);
         data.put("mediaUrl", mediaUrl);
 
         try{
@@ -169,13 +161,10 @@ public class NewPostFragment extends Fragment {
                     new CoroutineCallback<>((result, error) -> {
                         if (error != null){
                             Snackbar.make(requireView(), "Error: " +
-                                    error.toString(), Snackbar.LENGTH_LONG).show();
-                            System.err.println(error.toString() + "1232132132132132123");
+                                    error, Snackbar.LENGTH_LONG).show();
                         }else {
-                            System.out.println("Post creado: " +
-                                    mainHandler.post(() -> {
-                                        navController.popBackStack();
-                                    }));
+                            System.out.println("Post created: " +
+                                    mainHandler.post(() -> navController.popBackStack()));
                         }
                     })
             );
@@ -184,40 +173,35 @@ public class NewPostFragment extends Fragment {
         }
     }
 
-    private final ActivityResultLauncher<String> galeria =
+    private final ActivityResultLauncher<String> galleria =
             registerForActivityResult(new ActivityResultContracts.GetContent(),
-                    uri -> {
-                        appViewModel.setMediaSeleccionado(uri, mediaTipo);
-                    });
-    private final ActivityResultLauncher<Uri> camaraFotos =
+                    uri -> appViewModel.setMediaDeselection(uri, mediaType));
+    private final ActivityResultLauncher<Uri> camaraPhoto =
             registerForActivityResult(new ActivityResultContracts.TakePicture(),
-                    isSuccess -> {
-                        appViewModel.setMediaSeleccionado(mediaUri, "image");
-                    });
+                    isSuccess -> appViewModel.setMediaDeselection(mediaUri, "image"));
     private final ActivityResultLauncher<Uri> camaraVideos =
             registerForActivityResult(new ActivityResultContracts.TakeVideo(),
-                    isSuccess -> {
-                        appViewModel.setMediaSeleccionado(mediaUri, "video");
-                    });
-    private final ActivityResultLauncher<Intent> grabadoraAudio =
+                    isSuccess -> appViewModel.setMediaDeselection(mediaUri, "video"));
+    private final ActivityResultLauncher<Intent> recordAudio =
             registerForActivityResult(new
                     ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == Activity.RESULT_OK) {
-                    appViewModel.setMediaSeleccionado(result.getData().getData(),
+                    assert result.getData() != null;
+                    appViewModel.setMediaDeselection(result.getData().getData(),
                             "audio");
                 }
             });
-    private void seleccionarImagen() {
-        mediaTipo = "image";
-        galeria.launch("image/*");
+    private void selectionImage() {
+        mediaType = "image";
+        galleria.launch("image/*");
     }
-    private void seleccionarVideo() {
-        mediaTipo = "video";
-        galeria.launch("video/*");
+    private void selectionVideo() {
+        mediaType = "video";
+        galleria.launch("video/*");
     }
-    private void seleccionarAudio() {
-        mediaTipo = "audio";
-        galeria.launch("audio/*");
+    private void selectionAudio() {
+        mediaType = "audio";
+        galleria.launch("audio/*");
     }
     private void tomarFoto() {
         try {
@@ -226,8 +210,10 @@ public class NewPostFragment extends Fragment {
                     File.createTempFile("img", ".jpg",
                             requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES))
             );
-            camaraFotos.launch(mediaUri);
-        } catch (IOException e) {}
+            camaraPhoto.launch(mediaUri);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
     private void tomarVideo() {
         try {
@@ -236,21 +222,23 @@ public class NewPostFragment extends Fragment {
                     File.createTempFile("vid", ".mp4",
                             requireContext().getExternalFilesDir(Environment.DIRECTORY_MOVIES)));
             camaraVideos.launch(mediaUri);
-        } catch (IOException e) {}
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
-    private void grabarAudio() {
-        grabadoraAudio.launch(new
+    private void recordAudio() {
+        recordAudio.launch(new
                 Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION));
     }
 
-    private void pujaIguardarEnAppWrite(User<Map<String, Object>> user, final String
+    private void uploadAndSaveInAppWrite(User<Map<String, Object>> user, final String
             postText)
     {
         Handler mainHandler = new Handler(Looper.getMainLooper());
         Storage storage = new Storage(client);
-        File tempFile = null;
+        File tempFile;
         try {
-            tempFile = getFileFromUri(getContext(), mediaUri);
+            tempFile = getFileFromUri(requireContext(), mediaUri);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -265,15 +253,14 @@ public class NewPostFragment extends Fragment {
                                 error.getMessage() );
                         return;
                     }
+                    assert result != null;
                     String downloadUrl =
                             "https://cloud.appwrite.io/v1/storage/buckets/" +
                                     getString(R.string.APPWRITE_STORAGE_BUCKET_ID) + "/files/" + result.getId() +
                                     "/view?project=" + getString(R.string.APPWRITE_PROJECT_ID) + "&project=" +
                                     getString(R.string.APPWRITE_PROJECT_ID) + "&mode=admin";
                     mainHandler.post(() ->
-                    {
-                        guardarEnAppWrite(user, postText, downloadUrl);
-                    });
+                            saveEnAppWrite(user, postText, downloadUrl));
                 })
         );
     }
@@ -311,5 +298,9 @@ public class NewPostFragment extends Fragment {
             }
         }
         return fileName;
+    }
+
+    public ActivityResultLauncher<Uri> getCamaraPhoto() {
+        return camaraPhoto;
     }
 }

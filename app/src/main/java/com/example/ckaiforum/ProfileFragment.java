@@ -1,8 +1,6 @@
 package com.example.ckaiforum;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -49,19 +47,19 @@ public class ProfileFragment extends Fragment {
 
         Account account = new Account(client);
 
-        Handler mainHandler = new Handler(Looper.getMainLooper());
-
         try{
             account.get(new CoroutineCallback<>((result, error) -> {
                 if (error != null){
-                    error.printStackTrace();
-                    return;
+                    throw new RuntimeException(error);
                 }
 
-                displayNameTextView.setText(result.getName().toString());
-                emailTextView.setText(result.getEmail().toString());
+                assert result != null;
+                requireActivity().runOnUiThread(() -> {
+                    displayNameTextView.setText(result.getName());
+                    emailTextView.setText(result.getEmail());
+                    Glide.with(requireView()).load(R.drawable.user).into(photoImageView);
+                });
 
-                mainHandler.post(() -> Glide.with(requireView()).load(R.drawable.user).into(photoImageView));
 
             }));
         }catch (AppwriteException e){

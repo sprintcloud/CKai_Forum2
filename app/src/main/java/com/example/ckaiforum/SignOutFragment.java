@@ -41,14 +41,10 @@ public class SignOutFragment extends Fragment {
                 "current",
                 new CoroutineCallback<>((result, error) -> {
                     if (error != null) {
-                        error.printStackTrace();
-                        return;
+                        throw new RuntimeException(error);
                     }
 
-                    mainHandler.post(() -> {
-                        Navigation.findNavController(view).navigate(R.id.signInFragment);
-
-                    });
+                    mainHandler.post(() -> Navigation.findNavController(view).navigate(R.id.signInFragment));
                 })
         );
     }

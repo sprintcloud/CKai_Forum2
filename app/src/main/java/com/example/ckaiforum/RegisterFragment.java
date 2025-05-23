@@ -50,16 +50,11 @@ public class RegisterFragment extends Fragment {
 
         registerButton = view.findViewById(R.id.registerButton);
 
-        registerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view){
-                crearCuenta();
-            }
-        });
+        registerButton.setOnClickListener(view1 -> crearCuenta());
     }
 
     private void crearCuenta(){
-        if (!validarFormulario()){
+        if (!validFormulary()){
             return;
         }
 
@@ -82,7 +77,7 @@ public class RegisterFragment extends Fragment {
                         mainHandler.post(() -> registerButton.setEnabled(true));
 
                         if (error != null){
-                            Snackbar.make(requireView(), "Error: " + error.toString(), Snackbar.LENGTH_LONG).show();
+                            Snackbar.make(requireView(), "Error: " + error, Snackbar.LENGTH_LONG).show();
                             return;
                         }
 
@@ -92,11 +87,11 @@ public class RegisterFragment extends Fragment {
 
                                 new CoroutineCallback<>((result2, error2) -> {
                                     if (error2 != null){
-                                        Snackbar.make(requireView(), "Error: " + error2.toString(), Snackbar.LENGTH_LONG).show();
+                                        Snackbar.make(requireView(), "Error: " + error2, Snackbar.LENGTH_LONG).show();
                                     }
                                     else{
-                                        System.out.println("Sesión creada para el usuario:" + result2.toString());
-                                        mainHandler.post(() -> actualizarUI("Ok"));
+                                        System.out.println("Sesión creada para el usuario:" + result2);
+                                        mainHandler.post(this::actualizarUI);
                                     }
                                 })
                         );
@@ -107,13 +102,11 @@ public class RegisterFragment extends Fragment {
         }
     }
 
-    private void actualizarUI(String currenUser){
-        if (currenUser != null){
-            navController.navigate(R.id.homeFragment);
-        }
+    private void actualizarUI(){
+        navController.navigate(R.id.signInFragment);
     }
 
-    private boolean validarFormulario(){
+    private boolean validFormulary(){
         boolean valid = true;
 
         if (TextUtils.isEmpty(emailEditText.getText().toString())){

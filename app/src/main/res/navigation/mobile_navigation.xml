@@ -40,4 +40,9 @@
         android:name="com.example.ckaiforum.MediaFragment"
         android:label="fragment_media"
         tools:layout="@layout/fragment_media" />
+    <fragment
+        android:id="@+id/notificationsFragment"
+        android:name="com.example.ckaiforum.NotificationsFragment"
+        android:label="fragment_notifications"
+        tools:layout="@layout/fragment_notifications" />
 </navigation>

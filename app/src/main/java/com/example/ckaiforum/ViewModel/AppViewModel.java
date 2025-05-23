@@ -1,4 +1,4 @@
-package com.example.ckaiforum;
+package com.example.ckaiforum.ViewModel;
 
 import android.app.Application;
 import android.net.Uri;
@@ -13,20 +13,20 @@ public class AppViewModel extends AndroidViewModel
 {
     public static class Media {
         public Uri uri;
-        public String tipo;
-        public Media(Uri uri, String tipo) {
+        public String type;
+        public Media(Uri uri, String type) {
             this.uri = uri;
-            this.tipo = tipo;
+            this.type = type;
         }
     }
-    public MutableLiveData<Map<String,Object>> postSeleccionado = new
+    public MutableLiveData<Map<String,Object>> postDeselection = new
             MutableLiveData<>();
-    public MutableLiveData<Media> mediaSeleccionado = new
+    public MutableLiveData<Media> mediaDeselection = new
             MutableLiveData<>();
     public AppViewModel(@NonNull Application application) {
         super(application);
     }
-    public void setMediaSeleccionado(Uri uri, String type) {
-        mediaSeleccionado.setValue(new Media(uri, type));
+    public void setMediaDeselection(Uri uri, String type) {
+        mediaDeselection.setValue(new Media(uri, type));
     }
 }

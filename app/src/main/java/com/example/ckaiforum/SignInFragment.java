@@ -26,7 +26,6 @@ import io.appwrite.services.Account;
 public class SignInFragment extends Fragment {
 
     private EditText emailEditText, passwordEditText;
-    private Button emailSignInButton;
     private LinearLayout signInForm;
     private ProgressBar signInProgressBar;
     Client client;
@@ -53,7 +52,7 @@ public class SignInFragment extends Fragment {
 
         emailEditText = view.findViewById(R.id.emailEditText);
         passwordEditText = view.findViewById(R.id.passwordEditText);
-        emailSignInButton =  view.findViewById(R.id.emailSignInButton);
+        Button emailSignInButton = view.findViewById(R.id.emailSignInButton);
         signInForm = view.findViewById(R.id.signInForm);
         signInProgressBar = view.findViewById(R.id.signInProgressBar);
 
@@ -68,12 +67,11 @@ public class SignInFragment extends Fragment {
                 "current",
                 new CoroutineCallback<>((result, error) -> {
                     if (error != null){
-                        error.printStackTrace();
-                        return;
+                        throw new RuntimeException(error);
                     }
 
                     if (result != null){
-                        mainHandler.post(() -> actualizarUI("Ok"));
+                        mainHandler.post(() -> actualizarUI());
                     }
                 })
         );
@@ -103,8 +101,8 @@ public class SignInFragment extends Fragment {
                                 Snackbar.LENGTH_LONG).show();
                     }
                     else {
-                        System.out.println("Sesión creada para el usuario:" +result.toString());
-                        mainHandler.post(() -> actualizarUI("Ok"));
+                        System.out.println("Sesión creada para el usuario:" +result);
+                        mainHandler.post(() -> actualizarUI());
                         mainHandler.post(() -> {
                             signInForm.setVisibility(View.VISIBLE);
                             signInProgressBar.setVisibility(View.GONE);
@@ -113,9 +111,7 @@ public class SignInFragment extends Fragment {
                 })
         );
     };
-    private void actualizarUI(String currenUser){
-        if (currenUser != null){
-            navController.navigate(R.id.homeFragment);
-        }
+    private void actualizarUI(){
+        navController.navigate(R.id.homeFragment);
     }
 }
