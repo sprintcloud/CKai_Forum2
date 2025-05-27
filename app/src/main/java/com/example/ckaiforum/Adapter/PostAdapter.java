@@ -17,7 +17,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.ckaiforum.R;
 import com.example.ckaiforum.ViewModel.AppViewModel;
-import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +27,6 @@ import java.util.Objects;
 import io.appwrite.Client;
 import io.appwrite.coroutines.CoroutineCallback;
 import io.appwrite.exceptions.AppwriteException;
-import io.appwrite.models.Document;
 import io.appwrite.models.DocumentList;
 import io.appwrite.services.Databases;
 import androidx.navigation.NavController;
@@ -103,16 +101,12 @@ public class PostAdapter extends RecyclerView.Adapter<PostViewHolder>{
         assert likes != null;
         updateLikeUI(likes, comments, holder);
 
-        holder.commentLinearLayout.setOnClickListener(v -> updateCommentsInDatabase(post, likes, comments, holder));
+        holder.commentLinearLayout.setOnClickListener(v -> showCommentDialog(post, holder, comments));
         holder.likeLinearLayout.setOnClickListener(v -> updateLikesInDatabase(post, likes, holder));
         holder.deletePost.setOnClickListener(v -> delePost(post, holder));
     }
 
-    private void updateCommentsInDatabase(Map<String, Object> post, List<String> likes, int comments, PostViewHolder holder) {
-        showCommentDialog(post, holder);
-    }
-
-    private void showCommentDialog(final Map<String, Object> post, final PostViewHolder holder) {
+    private void showCommentDialog(final Map<String, Object> post, final PostViewHolder holder, int comments) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle("Post a comment");
 
@@ -124,6 +118,41 @@ public class PostAdapter extends RecyclerView.Adapter<PostViewHolder>{
             String comment = input.getText().toString().trim();
             if (!comment.isEmpty()) {
                 Toast.makeText(context, "Published successfully", Toast.LENGTH_SHORT).show();
+
+                int newComments = comments + 1;
+                Map<String, Object> data = new HashMap<>();
+                data.put("comments",newComments);
+
+                try {
+                    new Databases(client).updateDocument(
+                            context.getString(R.string.APPWRITE_DATABASE_ID),
+                            context.getString(R.string.APPWRITE_POSTS_COLLECTION_ID),
+                            Objects.requireNonNull(post.get("$id")).toString(),
+                            data,
+                            new ArrayList<>(),
+                            new CoroutineCallback<>((result, error) -> {
+                                if (error != null) {
+                                    throw new RuntimeException(error);
+                                }
+
+                                if (list != null) {
+                                    Handler handler = new Handler(Looper.getMainLooper());
+                                    handler.post(() ->
+                                    {
+                                        holder.numCommentTextView.setText(String.valueOf(comments));
+                                        list.getDocuments().get(holder.getAdapterPosition()).getData()
+                                                .put("comments", newComments);
+                                        setCommentsNotification(post, comments);
+                                        notifyItemChanged(holder.getAdapterPosition());
+                                    });
+
+
+                                }
+                            })
+                    );
+                } catch (AppwriteException e) {
+                    throw new RuntimeException(e);
+                }
             } else {
                 Toast.makeText(context, "Content cannot be empty", Toast.LENGTH_SHORT).show();
             }
@@ -170,7 +199,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostViewHolder>{
         holder.numCommentTextView.setText(String.valueOf(comments));
     }
 
-    private void setNotification(Map<String, Object> post,
+    private void setLikesNotification(Map<String, Object> post,
                                  List<String> newLikes){
         Databases databases = new Databases(client);
 
@@ -182,6 +211,31 @@ public class PostAdapter extends RecyclerView.Adapter<PostViewHolder>{
         try{
             databases.createDocument(context.getString(R.string.APPWRITE_DATABASE_ID),
             context.getString(R.string.APPWRITE_NOTIFICATIONS_COLLECTION_ID),
+                    "unique()",
+                    data,
+                    new CoroutineCallback<>((result, error) -> {
+                        if (error != null){
+                            error.printStackTrace();
+                            return;
+                        }
+                    }));
+        }catch (AppwriteException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void setCommentsNotification(Map<String, Object> post,
+                                      int comments){
+        Databases databases = new Databases(client);
+
+        Map<String, Object> data = new HashMap<>();
+
+        data.put("title", "System Notifications");
+        data.put("content", "Your post has new comment, totaling " + comments);
+        data.put("uid",post.get("uid"));
+        try{
+            databases.createDocument(context.getString(R.string.APPWRITE_DATABASE_ID),
+                    context.getString(R.string.APPWRITE_NOTIFICATIONS_COLLECTION_ID),
                     "unique()",
                     data,
                     new CoroutineCallback<>((result, error) -> {
@@ -230,7 +284,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostViewHolder>{
                                 holder.numLikesTextView.setText(String.valueOf(newLikes.size()));
                                 list.getDocuments().get(holder.getAdapterPosition()).getData()
                                         .put("likes", newLikes);
-                                setNotification(post, newLikes);
+                                setLikesNotification(post, newLikes);
                                 notifyItemChanged(holder.getAdapterPosition());
                             });
                         }
