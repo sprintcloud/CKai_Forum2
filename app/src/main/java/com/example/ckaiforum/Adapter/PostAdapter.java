@@ -1,6 +1,7 @@
 package com.example.ckaiforum.Adapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.InputType;
@@ -8,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -15,8 +17,10 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.ckaiforum.MyBottomSheetDialogFragment;
 import com.example.ckaiforum.R;
 import com.example.ckaiforum.ViewModel.AppViewModel;
+import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +32,10 @@ import io.appwrite.Client;
 import io.appwrite.coroutines.CoroutineCallback;
 import io.appwrite.exceptions.AppwriteException;
 import io.appwrite.models.DocumentList;
+import io.appwrite.models.File;
 import io.appwrite.services.Databases;
+import io.appwrite.services.Storage;
+
 import androidx.navigation.NavController;
 
 
@@ -38,14 +45,20 @@ public class PostAdapter extends RecyclerView.Adapter<PostViewHolder>{
     private final NavController navController;
     private final String userId;
     private final Client client;
+    private final String username;
+    private String fieldName;
+    private final androidx.fragment.app.FragmentManager fragmentManager;
     private DocumentList<Map<String, Object>> list;
 
-    public PostAdapter(Context context, AppViewModel appViewModel, NavController navController, String userId, Client client) {
+    public PostAdapter(Context context, AppViewModel appViewModel, NavController navController,
+                       String userId, Client client, String username, androidx.fragment.app.FragmentManager fragmentManager) {
         this.context = context;
         this.appViewModel = appViewModel;
         this.navController = navController;
         this.userId = userId;
+        this.username = username;
         this.client = client;
+        this.fragmentManager = fragmentManager;
     }
 
     @NonNull
@@ -93,6 +106,29 @@ public class PostAdapter extends RecyclerView.Adapter<PostViewHolder>{
         holder.authorTextView.setText(Objects.requireNonNull(post.get("author")).toString());
         holder.contentTextView.setText(Objects.requireNonNull(post.get("content")).toString());
         holder.deletePost.setVisibility(userId.equals(post.get("uid")) ? View.VISIBLE : View.GONE);
+        holder.actionViewPost.setOnClickListener(v -> {
+            navController.navigate(R.id.myBottomSheetDialogFragment);
+        });
+
+        holder.shareImageView.setOnClickListener(v -> {
+            String shareText = "Author: " + post.get("author") + "\n\r"
+                    + "Content: " + post.get("content") + "\n\r"
+                    + "UID: " + post.get("uid");
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+
+            context.startActivity(Intent.createChooser(shareIntent, "share text for"));
+        } );
+
+        List<String> tags = (List<String>) post.get("tags");
+        TextView tagsTitle = holder.tagsTitle;
+        ChipGroup tagsGroup = holder.tagsGroup;
+
+        if (tags.isEmpty()){
+            tagsTitle.setVisibility(View.GONE);
+            tagsGroup.setVisibility(View.GONE);
+        }
     }
 
     private void handleLikes(Map<String, Object> post, PostViewHolder holder) {
@@ -117,8 +153,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostViewHolder>{
         builder.setPositiveButton("Publish", (dialog, which) -> {
             String comment = input.getText().toString().trim();
             if (!comment.isEmpty()) {
-                Toast.makeText(context, "Published successfully", Toast.LENGTH_SHORT).show();
-
                 int newComments = comments + 1;
                 Map<String, Object> data = new HashMap<>();
                 data.put("comments",newComments);
@@ -150,6 +184,48 @@ public class PostAdapter extends RecyclerView.Adapter<PostViewHolder>{
                                 }
                             })
                     );
+
+
+                    new Storage(client).listFiles(
+                            context.getString(R.string.APPWRITE_STORAGE_BUCKET_ID),
+                            new CoroutineCallback<>((result, error) -> {
+                                if(error != null){
+                                    error.printStackTrace();
+                                    return;
+                                }
+
+                                for (File files: result.getFiles()){
+                                    if (files.getName().contains(userId)) {
+                                        fieldName = "https://cloud.appwrite.io/v1/storage/buckets/" +
+                                                context.getString(R.string.APPWRITE_STORAGE_BUCKET_ID) + "/files/" + files.getId() +
+                                                "/view?project=" + context.getString(R.string.APPWRITE_PROJECT_ID) + "&project=" +
+                                                context.getString(R.string.APPWRITE_PROJECT_ID) + "&mode=admin";
+                                        break;
+                                    }
+                                }
+                            })
+                    );
+
+                    data.clear();
+                    data.put("DocId", post.get("$id").toString());
+                    data.put("author", username);
+                    data.put("content", comment);
+                    data.put("authorPhotoUrl", fieldName);
+                    data.put("uid", userId);
+
+                    new Databases(client).createDocument(
+                            context.getString(R.string.APPWRITE_DATABASE_ID),
+                            context.getString(R.string.APPWRITE_SUB_POSTS_COLLECTION_ID),
+                            "unique()",
+                            data,
+                            new CoroutineCallback<>((result,error) -> {
+                                if(error != null){
+                                    error.printStackTrace();
+                                    return;
+                                }
+                                Handler handler = new Handler(Looper.getMainLooper());
+                                handler.post(() -> Toast.makeText(context, "Published successfully", Toast.LENGTH_SHORT).show());
+                            }));
                 } catch (AppwriteException e) {
                     throw new RuntimeException(e);
                 }

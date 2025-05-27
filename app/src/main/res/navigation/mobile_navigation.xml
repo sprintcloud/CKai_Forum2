@@ -45,4 +45,8 @@
         android:name="com.example.ckaiforum.NotificationsFragment"
         android:label="fragment_notifications"
         tools:layout="@layout/fragment_notifications" />
+    <dialog
+        android:id="@+id/myBottomSheetDialogFragment"
+        android:name="com.example.ckaiforum.MyBottomSheetDialogFragment"
+        android:label="MyBottomSheetDialogFragment" />
 </navigation>

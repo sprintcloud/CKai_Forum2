@@ -10,15 +10,15 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.ckaiforum.R;
+import com.google.android.material.chip.ChipGroup;
 
 public class PostViewHolder extends RecyclerView.ViewHolder
 {
-    public ImageView authorPhotoImageView;
-    public ImageView likeImageView;
-    public ImageView mediaImageView;
-    public TextView authorTextView, contentTextView, numLikesTextView, numCommentTextView;
+    public ImageView mediaImageView, likeImageView, authorPhotoImageView, shareImageView;
+    public TextView authorTextView, contentTextView, numLikesTextView, numCommentTextView, tagsTitle;
     public LinearLayout likeLinearLayout, commentLinearLayout;
-    public Button deletePost;
+    public Button deletePost, actionViewPost;
+    public ChipGroup tagsGroup;
 
     public PostViewHolder(@NonNull View itemView) {
         super(itemView);
@@ -33,5 +33,10 @@ public class PostViewHolder extends RecyclerView.ViewHolder
         deletePost = itemView.findViewById(R.id.actionDelete);
         commentLinearLayout = itemView.findViewById(R.id.commentLinearLayout);
         numCommentTextView = itemView.findViewById(R.id.numCommentTextView);
+        actionViewPost = itemView.findViewById(R.id.actionViewPost);
+        shareImageView = itemView.findViewById(R.id.shareImageView);
+        tagsGroup = itemView.findViewById(R.id.tagsChipGroup);
+        tagsTitle = itemView.findViewById(R.id.tagsContainer);
+
     }
 }

@@ -23,13 +23,10 @@ import io.appwrite.services.Databases;
 import kotlin.coroutines.Continuation;
 
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationViewHolder> {
-    private String userId;
     private List<Map<String, Object>> filteredList = new ArrayList<>();
 
 
     public NotificationAdapter(DocumentList<Map<String, Object>> list, String userId) {
-        this.userId = userId;
-
         for (Document<Map<String, Object>> doc : list.getDocuments()) {
             Map<String, Object> data = doc.getData();
             if (userId.equals(data.get("uid"))) {
@@ -57,18 +54,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationViewHo
         return filteredList.size();
 
     }
-
-    public void setList(DocumentList<Map<String, Object>> newList) {
-        filteredList.clear();
-        for (Document<Map<String, Object>> doc : newList.getDocuments()) {
-            Map<String, Object> data = doc.getData();
-            if (userId.equals(data.get("userId"))) {
-                filteredList.add(data);
-            }
-        }
-        notifyDataSetChanged();
-    }
-
     public void actReadAllData(Databases databases, String databaseId, String collectionId,
                                   Context context){
         for (Map<String, Object> documentData : filteredList) {

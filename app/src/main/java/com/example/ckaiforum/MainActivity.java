@@ -2,6 +2,7 @@ package com.example.ckaiforum;
 
 import android.os.Bundle;
 import android.view.Menu;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.android.material.navigation.NavigationView;
@@ -32,21 +33,6 @@ public class MainActivity extends AppCompatActivity {
 
         setSupportActionBar(binding.appBarMain.toolbar);
 
-        binding.appBarMain.toolbar.setNavigationOnClickListener(v -> {
-            NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-            int currentDestId = navController.getCurrentDestination().getId();
-            if (currentDestId == R.id.homeFragment) {
-                if (!binding.main.isDrawerOpen(GravityCompat.START)) {
-                    binding.main.openDrawer(GravityCompat.START);
-                } else {
-                    binding.main.closeDrawer(GravityCompat.START);
-                }
-            } else if(currentDestId == R.id.signInFragment) {
-            }else{
-                navController.navigateUp();
-            }
-        });
-
         DrawerLayout drawer = binding.main;
         NavigationView navigationView = binding.navView;
         // Passing each menu ID as a set of Ids because each
@@ -60,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
+
     }
 
     @Override

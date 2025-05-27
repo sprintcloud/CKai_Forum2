@@ -151,9 +151,9 @@ public class HomeFragment extends Fragment {
             if (error != null){
                 Snackbar.make(requireView(),error.toString(),Snackbar.LENGTH_LONG).show();
             }
-
                 requireActivity().runOnUiThread(() -> {
                     userId = result.getId();
+
                     RecyclerView postsRecyclerView = view.findViewById(R.id.postsRecyclerView);
                     postsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
                     postAdapter = new PostAdapter(
@@ -161,7 +161,9 @@ public class HomeFragment extends Fragment {
                             new ViewModelProvider(requireActivity()).get(AppViewModel.class),
                             Navigation.findNavController(view),
                             getUserIdSafely(),
-                            client
+                            client,
+                            result.getName(),
+                            getChildFragmentManager()
                     );
                     postsRecyclerView.setAdapter(postAdapter);
 
@@ -193,74 +195,62 @@ public class HomeFragment extends Fragment {
     }
 
     private void fetchPosts() {
-            try {
-                account.get(new CoroutineCallback<>((result, error) -> {
-                    if (error != null) return;
+        try {
+            account.get(new CoroutineCallback<>((result, error) -> {
+                if (error != null) return;
 
-                    requireActivity().runOnUiThread(() -> {
-                        assert result != null;
-                        displayNameTextView.setText(result.getName());
-                        emailTextView.setText(result.getEmail());
-//                        Glide.with(requireContext()).load(R.drawable.user).into(photoImageView);
-                        userId = result.getId();
-                    });
+                requireActivity().runOnUiThread(() -> {
+                    assert result != null;
+                    displayNameTextView.setText(result.getName());
+                    emailTextView.setText(result.getEmail());
+                    userId = result.getId();
+                });
 
-                    storage.listFiles(getString(R.string.APPWRITE_STORAGE_BUCKET_ID),
-                            new CoroutineCallback<>((result2, error2) ->{
-                                if (error2 != null){
-                                    Snackbar.make(requireView(), "Error " + error2.getMessage(), Snackbar.LENGTH_LONG).show();
+                storage.listFiles(getString(R.string.APPWRITE_STORAGE_BUCKET_ID),
+                        new CoroutineCallback<>((result2, error2) -> {
+                            if (error2 != null) {
+                                Snackbar.make(requireView(), "Error " + error2.getMessage(), Snackbar.LENGTH_LONG).show();
+                                return;
+                            }
+                            for (File files : result2.getFiles()) {
+                                if (files.getName().contains(userId)) {
+                                    Uri uri = Uri.parse("https://cloud.appwrite.io/v1/storage/buckets/" +
+                                            getString(R.string.APPWRITE_STORAGE_BUCKET_ID) + "/files/" + files.getId() +
+                                            "/view?project=" + getString(R.string.APPWRITE_PROJECT_ID) + "&project=" +
+                                            getString(R.string.APPWRITE_PROJECT_ID) + "&mode=admin");
+                                    requireActivity().runOnUiThread(() -> Glide.with(requireView()).load(uri).into(photoImageView));
                                     return;
                                 }
-                                for (File files: result2.getFiles()){
-                                    if (files.getName().contains(userId)) {
-                                        Uri uri = Uri.parse("https://cloud.appwrite.io/v1/storage/buckets/" +
-                                                getString(R.string.APPWRITE_STORAGE_BUCKET_ID) + "/files/" + files.getId() +
-                                                "/view?project=" + getString(R.string.APPWRITE_PROJECT_ID) + "&project=" +
-                                                getString(R.string.APPWRITE_PROJECT_ID) + "&mode=admin");
-                                        requireActivity().runOnUiThread(() -> Glide.with(requireView()).load(uri).into(photoImageView));
-                                        return;
-                                    }
+                            }
+                            requireActivity().runOnUiThread(() -> Glide.with(requireView()).load(R.drawable.user).into(photoImageView));
+                        }));
+
+                Databases databases = new Databases(client);
+
+                try {
+                    databases.listDocuments(
+                            getString(R.string.APPWRITE_DATABASE_ID), // databaseId
+                            getString(R.string.APPWRITE_POSTS_COLLECTION_ID), // collectionId
+                            new ArrayList<>(), // queries (optional)
+                            new CoroutineCallback<>((result1, error1) -> {
+                                if (error1 != null) {
+                                    Snackbar.make(requireView(), "Error al obtener los posts: "
+                                            + error1, Snackbar.LENGTH_LONG).show();
+                                    return;
                                 }
-                                requireActivity().runOnUiThread(() -> Glide.with(requireView()).load(R.drawable.user).into(photoImageView));
-                            }));
 
-                    Databases databases = new Databases(client);
-
-                    try {
-                        databases.listDocuments(
-                                getString(R.string.APPWRITE_DATABASE_ID), // databaseId
-                                getString(R.string.APPWRITE_POSTS_COLLECTION_ID), // collectionId
-                                new ArrayList<>(), // queries (optional)
-                                new CoroutineCallback<>((result1, error1) -> {
-                                    if (error1 != null) {
-                                        Snackbar.make(requireView(), "Error al obtener los posts: "
-                                                + error1, Snackbar.LENGTH_LONG).show();
-                                        return;
-                                    }
-
-                                    requireActivity().runOnUiThread(() ->{
-                                        postAdapter.setList(result1);
+                                requireActivity().runOnUiThread(() -> {
+                                            postAdapter.setList(result1);
                                         }
-                                    );
-                                })
-                        );
-                    } catch (AppwriteException e) {
-                        throw new RuntimeException(e);
-                    }
-                }));
-            } catch (AppwriteException e) {
-                throw new RuntimeException(e);
-            }
-    }
-
-    private void shareWithImageAndText() {
-        String shareText = "";
-
-        Intent shareIntent = new Intent(Intent.ACTION_SEND);
-        shareIntent.setType("text/plain");
-        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
-
-        startActivity(Intent.createChooser(shareIntent, "share text for"));
-
+                                );
+                            })
+                    );
+                } catch (AppwriteException e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+        } catch (AppwriteException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
