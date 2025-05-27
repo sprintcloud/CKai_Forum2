@@ -66,8 +66,9 @@ public class SignInFragment extends Fragment {
         account.getSession(
                 "current",
                 new CoroutineCallback<>((result, error) -> {
-                    if (error != null){
-                        throw new RuntimeException(error);
+                    if (error != null) {
+                        error.printStackTrace();
+                        return;
                     }
 
                     if (result != null){

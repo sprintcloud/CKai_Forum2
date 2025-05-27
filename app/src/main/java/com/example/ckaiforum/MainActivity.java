@@ -2,9 +2,11 @@ package com.example.ckaiforum;
 
 import android.os.Bundle;
 import android.view.Menu;
+import android.widget.Toast;
 
 import com.google.android.material.navigation.NavigationView;
 
+import androidx.core.view.GravityCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -13,6 +15,8 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.ckaiforum.databinding.ActivityMainBinding;
+
+import io.appwrite.services.Databases;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,6 +31,21 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         setSupportActionBar(binding.appBarMain.toolbar);
+
+        binding.appBarMain.toolbar.setNavigationOnClickListener(v -> {
+            NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
+            int currentDestId = navController.getCurrentDestination().getId();
+            if (currentDestId == R.id.homeFragment) {
+                if (!binding.main.isDrawerOpen(GravityCompat.START)) {
+                    binding.main.openDrawer(GravityCompat.START);
+                } else {
+                    binding.main.closeDrawer(GravityCompat.START);
+                }
+            } else if(currentDestId == R.id.signInFragment) {
+            }else{
+                navController.navigateUp();
+            }
+        });
 
         DrawerLayout drawer = binding.main;
         NavigationView navigationView = binding.navView;

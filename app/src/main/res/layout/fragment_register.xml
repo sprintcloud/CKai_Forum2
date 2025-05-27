@@ -6,6 +6,17 @@
     tools:context=".RegisterFragment"
     android:orientation="vertical">
 
+    <ImageView
+        android:id="@+id/avatarImageView"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_margin="16dp"
+        android:src="@drawable/user"
+        android:layout_gravity="center"
+        android:contentDescription="Avatar"
+        android:onClick="onAvatarClick"
+        android:clickable="true"/>
+
     <EditText
         android:id="@+id/usernameEditText"
         android:layout_width="match_parent"

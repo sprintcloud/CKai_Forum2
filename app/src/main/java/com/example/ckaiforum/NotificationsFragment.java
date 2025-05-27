@@ -11,21 +11,29 @@ import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.ArrayMap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 import com.example.ckaiforum.Adapter.NotificationAdapter;
 import com.example.ckaiforum.ViewModel.AppViewModel;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import io.appwrite.Client;
+import io.appwrite.Query;
 import io.appwrite.coroutines.CoroutineCallback;
 import io.appwrite.exceptions.AppwriteException;
+import io.appwrite.models.Document;
+import io.appwrite.models.DocumentList;
 import io.appwrite.services.Account;
 import io.appwrite.services.Databases;
 
@@ -55,7 +63,14 @@ public class NotificationsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         notificationsRecyclerView = view.findViewById(R.id.notificationsRecyclerView);
         notificationsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        Button readAllBtn = view.findViewById(R.id.item_readAllButton);
 
+        readAllBtn.setOnClickListener(v -> {
+            requireActivity().runOnUiThread(() ->{
+                notificationAdapter.actReadAllData(databases, getString(R.string.APPWRITE_DATABASE_ID),
+                        getString(R.string.APPWRITE_NOTIFICATIONS_COLLECTION_ID), requireActivity());
+            });
+        });
         initClient();
         fetchNotifications();
     }
@@ -76,33 +91,30 @@ public class NotificationsFragment extends Fragment {
                 }
                 assert result != null;
                 userId = result.getId();
-            }));
-        } catch (AppwriteException e) {
-            throw new RuntimeException(e);
-        }
-        Map<String, Object> queries = new HashMap<>();
-        queries.put("userId", userId);
-        try {
-            databases.listDocuments(
-                    getString(R.string.APPWRITE_DATABASE_ID),
-                    getString(R.string.APPWRITE_NOTIFICATIONS_COLLECTION_ID),
-                    new ArrayList<>(Integer.parseInt(userId)),
-                    new CoroutineCallback<>((result, error)->{
-                        if (error != null){
-                            Snackbar.make(requireView(), "Error al obtener los notifications: "
-                                    + error, Snackbar.LENGTH_LONG).show();
-                            System.out.println(error);
-                        }
-                        System.out.println(result);
-                        requireActivity().runOnUiThread(() -> {
-                            Map<String,Object> notification = result.getDocuments().get(1).getData();
+                try {
+                    databases.listDocuments(
+                            getString(R.string.APPWRITE_DATABASE_ID),
+                            getString(R.string.APPWRITE_NOTIFICATIONS_COLLECTION_ID),
+                            new ArrayList<>(),
+                            new CoroutineCallback<>((result1, error1)->{
+                                if (error1 != null){
+                                    Snackbar.make(requireView(), "Error al obtener los notifications: "
+                                            + error1, Snackbar.LENGTH_LONG).show();
+                                }
 
-//                            if (notification.get("$id")
-                            notificationAdapter = new NotificationAdapter(result);
-                            notificationsRecyclerView.setAdapter(notificationAdapter);
-                        });
-                    })
-            );
+                                assert result1 != null;
+
+                                requireActivity().runOnUiThread(() -> {
+
+                                    notificationAdapter = new NotificationAdapter(result1, userId);
+                                    notificationsRecyclerView.setAdapter(notificationAdapter);
+                                });
+                            })
+                    );
+                } catch (AppwriteException e) {
+                    throw new RuntimeException(e);
+                }
+            }));
         } catch (AppwriteException e) {
             throw new RuntimeException(e);
         }

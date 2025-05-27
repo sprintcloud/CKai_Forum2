@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
-    <external-path name="name"
-        path="Android/data/com.example.socialapp/files/" />
+    <!-- 外部存储公共目录 -->
+    <external-path
+        name="external_files"
+        path="."/>
 </paths>

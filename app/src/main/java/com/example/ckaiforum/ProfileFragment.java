@@ -1,5 +1,6 @@
 package com.example.ckaiforum;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,17 +15,24 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
 import com.bumptech.glide.Glide;
+import com.google.android.material.snackbar.Snackbar;
+
+import java.util.List;
 
 import io.appwrite.Client;
 import io.appwrite.coroutines.CoroutineCallback;
 import io.appwrite.exceptions.AppwriteException;
+import io.appwrite.models.File;
+import io.appwrite.models.FileList;
 import io.appwrite.services.Account;
+import io.appwrite.services.Storage;
 
 public class ProfileFragment extends Fragment {
 
     NavController navController;
     ImageView photoImageView;
     TextView displayNameTextView, emailTextView;
+    String userId;
 
     public ProfileFragment() {}
     @Override
@@ -46,6 +54,7 @@ public class ProfileFragment extends Fragment {
                 .setProject(getString(R.string.APPWRITE_PROJECT_ID));
 
         Account account = new Account(client);
+        Storage storage = new Storage(client);
 
         try{
             account.get(new CoroutineCallback<>((result, error) -> {
@@ -57,7 +66,25 @@ public class ProfileFragment extends Fragment {
                 requireActivity().runOnUiThread(() -> {
                     displayNameTextView.setText(result.getName());
                     emailTextView.setText(result.getEmail());
-                    Glide.with(requireView()).load(R.drawable.user).into(photoImageView);
+                    userId = result.getId();
+                    storage.listFiles(getString(R.string.APPWRITE_STORAGE_BUCKET_ID),
+                            new CoroutineCallback<>((result2, error2) ->{
+                                if (error2 != null){
+                                    Snackbar.make(requireView(), "Error " + error2.getMessage(), Snackbar.LENGTH_LONG).show();
+                                    return;
+                                }
+                                for (File files: result2.getFiles()){
+                                    if (files.getName().contains(userId)) {
+                                        Uri uri = Uri.parse("https://cloud.appwrite.io/v1/storage/buckets/" +
+                                                getString(R.string.APPWRITE_STORAGE_BUCKET_ID) + "/files/" + files.getId() +
+                                                "/view?project=" + getString(R.string.APPWRITE_PROJECT_ID) + "&project=" +
+                                                getString(R.string.APPWRITE_PROJECT_ID) + "&mode=admin");
+                                        requireActivity().runOnUiThread(() -> Glide.with(requireView()).load(uri).into(photoImageView));
+                                        return;
+                                    }
+                                }
+                                requireActivity().runOnUiThread(() -> Glide.with(requireView()).load(R.drawable.user).into(photoImageView));
+                            }));
                 });
 
 

@@ -143,35 +143,67 @@ public class NewPostFragment extends Fragment {
 
         Databases databases = new Databases(client);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("uid", user.getId());
-        data.put("author", user.getName());
-        data.put("authorPhotoUrl", null);
-        data.put("content", content);
-        data.put("mediatype", mediaType);
-        data.put("mediaUrl", mediaUrl);
+        Storage storage = new Storage(client);
 
         try{
-            databases.createDocument(
-                    getString(R.string.APPWRITE_DATABASE_ID),
-                    getString(R.string.APPWRITE_POSTS_COLLECTION_ID),
-                    "unique()",
-                    data,
-                    new ArrayList<>(),
-                    new CoroutineCallback<>((result, error) -> {
-                        if (error != null){
-                            Snackbar.make(requireView(), "Error: " +
-                                    error, Snackbar.LENGTH_LONG).show();
-                        }else {
-                            System.out.println("Post created: " +
-                                    mainHandler.post(() -> navController.popBackStack()));
-                        }
-                    })
-            );
-        }catch (AppwriteException e){
+            account.get(new CoroutineCallback<>((result, error) -> {
+                if (error != null){
+                    throw new RuntimeException(error);
+                }
+
+                assert result != null;
+                requireActivity().runOnUiThread(() -> {
+                    storage.listFiles(getString(R.string.APPWRITE_STORAGE_BUCKET_ID),
+                            new CoroutineCallback<>((result2, error2) -> {
+                                String authorPhotoUrl = null;
+                                if (error2 != null) {
+                                    Snackbar.make(requireView(), "Error " + error2.getMessage(), Snackbar.LENGTH_LONG).show();
+                                    return;
+                                }
+                                for (io.appwrite.models.File files : result2.getFiles()) {
+                                    if (files.getName().contains(result.getId())) {
+                                        authorPhotoUrl = "https://cloud.appwrite.io/v1/storage/buckets/" +
+                                                getString(R.string.APPWRITE_STORAGE_BUCKET_ID) + "/files/" + files.getId() +
+                                                "/view?project=" + getString(R.string.APPWRITE_PROJECT_ID) + "&project=" +
+                                                getString(R.string.APPWRITE_PROJECT_ID) + "&mode=admin";
+                                    }
+                                }
+                                Map<String, Object> data = new HashMap<>();
+                                data.put("uid", user.getId());
+                                data.put("author", user.getName());
+                                data.put("authorPhotoUrl", authorPhotoUrl);
+                                data.put("content", content);
+                                data.put("mediatype", mediaType);
+                                data.put("mediaUrl", mediaUrl);
+                                try {
+                                    databases.createDocument(
+                                            getString(R.string.APPWRITE_DATABASE_ID),
+                                            getString(R.string.APPWRITE_POSTS_COLLECTION_ID),
+                                            "unique()",
+                                            data,
+                                            new ArrayList<>(),
+                                            new CoroutineCallback<>((result3, error3) -> {
+                                                if (error3 != null) {
+                                                    Snackbar.make(requireView(), "Error: " +
+                                                            error3, Snackbar.LENGTH_LONG).show();
+                                                } else {
+                                                    System.out.println("Post created: " +
+                                                            mainHandler.post(() -> navController.popBackStack()));
+                                                }
+                                            })
+                                    );
+                                } catch (AppwriteException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                    );
+                });
+            }));
+        }catch (AppwriteException e) {
             throw new RuntimeException(e);
         }
-    }
+        }
+
 
     private final ActivityResultLauncher<String> galleria =
             registerForActivityResult(new ActivityResultContracts.GetContent(),

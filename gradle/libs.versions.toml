@@ -16,6 +16,7 @@ sdkForAndroid = "7.0.1"
 activity = "1.8.0"
 annotation = "1.6.0"
 lifecycleViewmodelAndroid = "2.9.0"
+sdkForAndroidVersion = "7.0.0"
 
 [libraries]
 cardview = { module = "androidx.cardview:cardview", version.ref = "cardview" }
@@ -35,6 +36,7 @@ sdk-for1-android = { module = "io.appwrite:sdk-for-android", version.ref = "sdkF
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
 lifecycle-viewmodel-android = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-android", version.ref = "lifecycleViewmodelAndroid" }
+sdk-for1-android-v700 = { module = "io.appwrite:sdk-for-android", version.ref = "sdkForAndroidVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
